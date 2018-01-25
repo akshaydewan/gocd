@@ -1,6 +1,7 @@
 # GoCD
 
 [![Join the chat at https://gitter.im/gocd/gocd](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gocd/gocd?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fakshaydewan%2Fgocd.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fakshaydewan%2Fgocd?ref=badge_shield)
 
 This is the main repository for GoCD - a continuous delivery server. GoCD helps you automate and streamline the build-test-release cycle for worry-free, continuous delivery of your product.
 
@@ -18,3 +19,6 @@ A lot of useful information like links to user documentation, design documentati
 ## License
 
 GoCD is an open source project, sponsored by [ThoughtWorks Inc.](https://www.thoughtworks.com) under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fakshaydewan%2Fgocd.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fakshaydewan%2Fgocd?ref=badge_large)
