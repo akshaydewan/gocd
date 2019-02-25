@@ -106,7 +106,21 @@ describe("Agent State Count Widget", () => {
         "firefox"
       ],
       "environments":       [
-        "Dev"
+        {
+          "name":   "Dev",
+          "origin": {
+            "type":   "gocd",
+            "_links": {
+              "self": {
+                "href": "http://localhost:8153/go/admin/config_xml"
+              },
+              "doc":  {
+                "href": "https://api.gocd.org/19.2.0/#get-configuration"
+              }
+            }
+          }
+        }
+
       ]
     }
   ];
