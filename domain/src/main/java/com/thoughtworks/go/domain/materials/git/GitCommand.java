@@ -16,7 +16,6 @@
 
 package com.thoughtworks.go.domain.materials.git;
 
-import com.thoughtworks.go.config.materials.git.GitMaterial;
 import com.thoughtworks.go.config.materials.git.GitMaterialConfig;
 import com.thoughtworks.go.domain.materials.Modification;
 import com.thoughtworks.go.domain.materials.Revision;
@@ -129,6 +128,24 @@ public class GitCommand extends SCMCommand {
             addModifiedFiles(mod);
         }
         return mods;
+    }
+
+    @Override
+    protected int run(CommandLine commandLine, ConsoleOutputStreamConsumer outputStreamConsumer, String... input) {
+        LOG.debug(commandLine.toString());
+        return super.run(commandLine, outputStreamConsumer, input);
+    }
+
+    @Override
+    public ConsoleResult runOrBomb(CommandLine commandLine, boolean failOnNonZeroReturn, String... input) {
+        LOG.debug(commandLine.toString());
+        return super.runOrBomb(commandLine, failOnNonZeroReturn, input);
+    }
+
+    @Override
+    public ConsoleResult runOrBomb(CommandLine commandLine, String... input) {
+        LOG.debug(commandLine.toString());
+        return super.runOrBomb(commandLine, input);
     }
 
     private void addModifiedFiles(Modification mod) {
