@@ -20,6 +20,7 @@ import com.thoughtworks.go.plugin.access.analytics.AnalyticsExtension;
 import com.thoughtworks.go.plugin.access.authorization.AuthorizationMetadataStore;
 import com.thoughtworks.go.server.cache.GoCache;
 import com.thoughtworks.go.server.service.*;
+import com.thoughtworks.go.server.service.support.toggle.FeatureToggleService;
 import com.thoughtworks.go.spark.SparkController;
 import com.thoughtworks.go.spark.spa.*;
 import com.thoughtworks.go.spark.spring.SPAAuthenticationHelper;
@@ -56,6 +57,7 @@ public class SpaControllers implements SparkSpringController {
 		sparkControllers.add(new AdminTemplatesController(authenticationHelper, templateEngineFactory.create(AdminTemplatesController.class, () -> COMPONENT_LAYOUT_PATH)));
 		sparkControllers.add(new AdminPipelinesController(authenticationHelper, templateEngineFactory.create(AdminPipelinesController.class, () -> COMPONENT_LAYOUT_PATH)));
 		sparkControllers.add(new ServerConfigurationController(authenticationHelper, templateEngineFactory.create(ServerConfigurationController.class, () -> COMPONENT_LAYOUT_PATH)));
+		sparkControllers.add(new ElasticAgentsController(authenticationHelper, templateEngineFactory.create(ElasticAgentsController.class, () -> COMPONENT_LAYOUT_PATH)));
 		sparkControllers.add(new NewEnvironmentsController(authenticationHelper, templateEngineFactory.create(NewEnvironmentsController.class, () -> COMPONENT_LAYOUT_PATH)));
         sparkControllers.add(new PipelineConfigsController(authenticationHelper, templateEngineFactory.create(PipelineConfigsController.class, () -> COMPONENT_LAYOUT_PATH)));
         sparkControllers.add(new NewAgentController(systemEnvironment, securityService, authenticationHelper, templateEngineFactory.create(NewAgentController.class, () -> COMPONENT_LAYOUT_PATH)));

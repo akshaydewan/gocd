@@ -435,4 +435,8 @@ export class SparkRoutes {
   static editTemplatePermissions(templateName: string) {
     return `/go/admin/templates/${templateName}/permissions`;
   }
+
+  static apiAdminInternalPipelinesPath() {
+    return "/go/api/internal/pipeline_structure";
+  }
 }

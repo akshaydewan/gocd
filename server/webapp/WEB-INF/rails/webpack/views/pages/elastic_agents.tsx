@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {ErrorResponse} from "helpers/api_request_builder";
+
+import {ApiRequestBuilder, ApiResult, ApiVersion, ErrorResponse} from "helpers/api_request_builder";
+import {SparkRoutes} from "helpers/spark_routes";
 import m from "mithril";
 import Stream from "mithril/stream";
 import {ClusterProfilesCRUD} from "models/elastic_profiles/cluster_profiles_crud";
@@ -24,45 +26,87 @@ import {
   ElasticAgentProfile,
   ElasticAgentProfiles
 } from "models/elastic_profiles/types";
-import {ExtensionTypeString} from "models/shared/plugin_infos_new/extension_type";
+import {Configurations} from "models/shared/configuration";
+import {PipelineStructure} from "models/shared/pipeline_structure/pipeline_structure";
+import {PipelineStructureJSON} from "models/shared/pipeline_structure/serialization";
+import {ElasticAgentsExtensionType, ExtensionTypeString} from "models/shared/plugin_infos_new/extension_type";
+import {PluginInfos} from "models/shared/plugin_infos_new/plugin_info";
 import {PluginInfoCRUD} from "models/shared/plugin_infos_new/plugin_info_crud";
-import * as Buttons from "views/components/buttons";
+import {Primary} from "views/components/buttons";
 import {FlashMessage, MessageType} from "views/components/flash_message";
 import {HeaderPanel} from "views/components/header_panel";
 import {DeleteConfirmModal} from "views/components/modal/delete_confirm_modal";
+import {NoPluginsOfTypeInstalled} from "views/components/no_plugins_installed";
+import {ElasticProfilesPage} from "views/pages/elastic_agent_configurations";
+import {ClusterProfileOperations} from "views/pages/elastic_agent_configurations/cluster_profile_widget";
 import {
   CloneClusterProfileModal,
   EditClusterProfileModal,
   NewClusterProfileModal
 } from "views/pages/elastic_agent_configurations/cluster_profiles_modals";
-import {
-  ClusterProfilesWidget,
-  ClusterProfilesWidgetAttrs
-} from "views/pages/elastic_agent_configurations/cluster_profiles_widget";
+import {ClusterProfilesWidget} from "views/pages/elastic_agent_configurations/cluster_profiles_widget";
 import {
   CloneElasticProfileModal,
-  EditElasticProfileModal,
-  NewElasticProfileModal,
-  UsageElasticProfileModal
+  EditElasticProfileModal, NewElasticProfileModal, UsageElasticProfileModal
 } from "views/pages/elastic_agent_configurations/elastic_agent_profiles_modals";
+import {ElasticAgentOperations} from "views/pages/elastic_agent_configurations/elastic_profiles_widget";
+import {HelpText} from "views/pages/elastic_agents/help_text";
+import {openWizard} from "views/pages/elastic_agents/wizard";
+import {Page, PageState} from "views/pages/page";
 import {RequiresPluginInfos, SaveOperation} from "views/pages/page_operations";
 
-import {Page, PageState} from "./page";
-
-export interface State extends RequiresPluginInfos, ClusterProfilesWidgetAttrs, SaveOperation {
+export interface State extends RequiresPluginInfos, SaveOperation {
   onShowUsages: (profileId: string, event: MouseEvent) => void;
-  elasticProfiles: ElasticAgentProfiles;
-  clusterProfiles: ClusterProfiles;
+  elasticProfiles: Stream<ElasticAgentProfiles>;
+  clusterProfiles: Stream<ClusterProfiles>;
+  clusterProfileBeingEdited: Stream<ClusterProfile>;
+  elasticProfileBeingEdited: Stream<ElasticAgentProfile>;
+  pipelineStructure: Stream<PipelineStructure>;
+  elasticAgentOperations: ElasticAgentOperations;
+  clusterProfileOperations: ClusterProfileOperations;
 }
 
-export class ElasticProfilesPage extends Page<null, State> {
+export class PipelineStructureCRUD {
+  static all() {
+    return ApiRequestBuilder.GET(SparkRoutes.apiAdminInternalPipelinesPath(), ApiVersion.latest)
+                            .then((result: ApiResult<string>) => {
+                              return result.map((str) => {
+                                const data = JSON.parse(str) as PipelineStructureJSON.PipelineStructure;
+                                return PipelineStructure.fromJSON(data);
+                              });
+                            });
+
+  }
+}
+
+export class ElasticAgentsPage extends Page<null, State> {
+  componentToDisplay(vnode: m.Vnode<null, State>): m.Children {
+    if (vnode.state.pluginInfos().length === 0) {
+      return (<NoPluginsOfTypeInstalled extensionType={new ElasticAgentsExtensionType()}/>);
+    }
+    if (vnode.state.clusterProfiles().empty()) {
+      return <div>
+        <HelpText/>
+      </div>;
+    }
+
+    return <div>
+      <FlashMessage type={this.flashMessage.type} message={this.flashMessage.message}/>
+      <ClusterProfilesWidget elasticProfiles={vnode.state.elasticProfiles()}
+                             clusterProfiles={vnode.state.clusterProfiles()}
+                             pluginInfos={vnode.state.pluginInfos}
+                             elasticAgentOperations={vnode.state.elasticAgentOperations}
+                             clusterProfileOperations={vnode.state.clusterProfileOperations}
+                             onShowUsages={vnode.state.onShowUsages.bind(vnode.state)}
+                             isUserAnAdmin={ElasticProfilesPage.isUserAnAdmin()}/>
+    </div>;
+  }
+
+  pageName(): string {
+    return "Elastic Agents Configuration";
+  }
+
   oninit(vnode: m.Vnode<null, State>) {
-    vnode.state.pluginInfos     = Stream();
-    vnode.state.clusterProfiles = new ClusterProfiles([]);
-    vnode.state.elasticProfiles = new ElasticAgentProfiles([]);
-
-    this.fetchData(vnode);
-
     vnode.state.elasticAgentOperations = {
       onClone: (elasticProfile: ElasticAgentProfile, event: MouseEvent) => {
         event.stopPropagation();
@@ -71,7 +115,7 @@ export class ElasticProfilesPage extends Page<null, State> {
         new CloneElasticProfileModal(elasticProfile.id()!,
                                      elasticProfile.pluginId()!,
                                      vnode.state.pluginInfos(),
-                                     vnode.state.clusterProfiles,
+                                     vnode.state.clusterProfiles(),
                                      vnode.state.onSuccessfulSave).render();
       },
 
@@ -82,7 +126,7 @@ export class ElasticProfilesPage extends Page<null, State> {
         new EditElasticProfileModal(elasticProfile.id()!,
                                     elasticProfile.pluginId()!,
                                     vnode.state.pluginInfos(),
-                                    vnode.state.clusterProfiles,
+                                    vnode.state.clusterProfiles(),
                                     vnode.state.onSuccessfulSave).render();
       },
 
@@ -118,7 +162,7 @@ export class ElasticProfilesPage extends Page<null, State> {
         this.flashMessage.clear();
 
         new NewElasticProfileModal(vnode.state.pluginInfos(),
-                                   vnode.state.clusterProfiles,
+                                   vnode.state.clusterProfiles(),
                                    elasticAgentProfile,
                                    vnode.state.onSuccessfulSave).render();
       }
@@ -204,65 +248,82 @@ export class ElasticProfilesPage extends Page<null, State> {
         );
       });
     };
+    super.oninit(vnode);
   }
 
-  pageName() {
-    return "Elastic Agent Configurations";
-  }
+  fetchData(vnode: m.Vnode<null, State>): Promise<any> {
+    vnode.state.pluginInfos               = Stream(new PluginInfos());
+    vnode.state.clusterProfiles           = Stream(new ClusterProfiles([]));
+    vnode.state.elasticProfiles           = Stream(new ElasticAgentProfiles([]));
+    vnode.state.clusterProfileBeingEdited = Stream();
+    vnode.state.elasticProfileBeingEdited = Stream();
+    vnode.state.pipelineStructure         = Stream(new PipelineStructure([], []));
 
-  componentToDisplay(vnode: m.Vnode<null, State>) {
-    return <div>
-      <FlashMessage type={this.flashMessage.type} message={this.flashMessage.message}/>
-      <ClusterProfilesWidget elasticProfiles={vnode.state.elasticProfiles}
-                             clusterProfiles={vnode.state.clusterProfiles}
-                             pluginInfos={vnode.state.pluginInfos}
-                             elasticAgentOperations={vnode.state.elasticAgentOperations}
-                             clusterProfileOperations={vnode.state.clusterProfileOperations}
-                             onShowUsages={vnode.state.onShowUsages.bind(vnode.state)}
-                             isUserAnAdmin={ElasticProfilesPage.isUserAnAdmin()}/>
-    </div>;
-  }
-
-  headerPanel(vnode: m.Vnode<null, State>) {
-    const headerButtons = [];
-    const hasPlugins    = vnode.state.pluginInfos() && vnode.state.pluginInfos().length > 0;
-    headerButtons.push(<Buttons.Primary disabled={!hasPlugins}
-                                        onclick={vnode.state.clusterProfileOperations.onAdd.bind(vnode.state)}>
-      <span title={!hasPlugins ? "Install some elastic agent plugins to add a cluster profile." : undefined}>Add Cluster Profile</span>
-    </Buttons.Primary>);
-
-    return <HeaderPanel title="Elastic Profiles" buttons={headerButtons}/>;
-  }
-
-  fetchData(vnode: m.Vnode<null, State>) {
-    return Promise.all([
-                         PluginInfoCRUD.all({type: ExtensionTypeString.ELASTIC_AGENTS}),
-                         ClusterProfilesCRUD.all(),
-                         ElasticAgentProfilesCRUD.all()
-                       ]).then((results) => {
+    return Promise.all(
+      [
+        PluginInfoCRUD.all({type: ExtensionTypeString.ELASTIC_AGENTS}),
+        PipelineStructureCRUD.all(),
+        ClusterProfilesCRUD.all(),
+        ElasticAgentProfilesCRUD.all(),
+      ]
+    ).then((results) => {
       results[0].do(
         (successResponse) => {
           this.pageState = PageState.OK;
           vnode.state.pluginInfos(successResponse.body);
         },
-        () => this.setErrorState()
+        (errorResponse) => {
+          this.setErrorState();
+          this.flashMessage.setMessage(MessageType.alert, errorResponse.message);
+        }
       );
       results[1].do(
         (successResponse) => {
-          this.pageState              = PageState.OK;
-          vnode.state.clusterProfiles = successResponse.body;
-
-          results[2].do(
-            (successResponse) => {
-              this.pageState = PageState.OK;
-              successResponse.body.inferPluginIdFromReferencedCluster(vnode.state.clusterProfiles);
-              vnode.state.elasticProfiles = successResponse.body;
-            },
-            () => this.setErrorState()
-          );
+          vnode.state.pipelineStructure(successResponse.body);
+          this.pageState = PageState.OK;
+        },
+        () => this.setErrorState()
+      );
+      results[2].do(
+        (successResponse) => {
+          vnode.state.clusterProfiles(successResponse.body);
+          this.pageState = PageState.OK;
+        },
+        () => this.setErrorState()
+      );
+      results[3].do(
+        (successResponse) => {
+          successResponse.body.inferPluginIdFromReferencedCluster(vnode.state.clusterProfiles());
+          vnode.state.elasticProfiles(successResponse.body);
+          this.pageState = PageState.OK;
         },
         () => this.setErrorState()
       );
     });
+  }
+
+  protected headerPanel(vnode: m.Vnode<null, State>): any {
+    return <HeaderPanel title={this.pageName()} buttons={this.buttons(vnode)}/>;
+  }
+
+  private buttons(vnode: m.Vnode<null, State>) {
+    const hasPluginInstalled = vnode.state.pluginInfos().length !== 0;
+    if (hasPluginInstalled) {
+      return <Primary onclick={this.addNewClusterProfile.bind(this, vnode)}>Add</Primary>;
+    }
+  }
+
+  private addNewClusterProfile(vnode: m.Vnode<null, State>) {
+    vnode.state.clusterProfileBeingEdited(new ClusterProfile("",
+                                                             vnode.state.pluginInfos()[0].id,
+                                                             new Configurations([])));
+    vnode.state.elasticProfileBeingEdited(new ElasticAgentProfile("",
+                                                                  vnode.state.clusterProfileBeingEdited().pluginId(),
+                                                                  vnode.state.clusterProfileBeingEdited().id(),
+                                                                  new Configurations([])));
+    return openWizard(vnode.state.pluginInfos,
+               vnode.state.clusterProfileBeingEdited,
+               vnode.state.elasticProfileBeingEdited,
+               vnode.state.pipelineStructure);
   }
 }
