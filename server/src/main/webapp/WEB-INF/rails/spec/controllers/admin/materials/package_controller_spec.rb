@@ -15,7 +15,7 @@
 #
 
 require 'rails_helper'
-require_relative 'material_controller_examples'
+require_relative 'old_material_controller_examples'
 
 describe Admin::Materials::PackageController do
   include ConfigSaveStubbing
@@ -25,7 +25,7 @@ describe Admin::Materials::PackageController do
     @short_material_type = 'package'
   end
 
-  it_should_behave_like :material_controller do
+  it_should_behave_like :material_controller_without_fast_save do
     def assert_material_is_initialized
       expect(assigns[:material]).not_to eq(nil)
       expect(assigns[:material].getType()).to eq('PackageMaterial')

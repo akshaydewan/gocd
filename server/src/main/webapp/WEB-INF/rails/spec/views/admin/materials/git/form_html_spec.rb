@@ -21,6 +21,9 @@ describe "_form.html.erb" do
   include FormUI
 
   before(:each) do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
+
     @material_config = com.thoughtworks.go.helper.MaterialConfigsMother.git("git://foo", "master")
     @material_config.setFolder("dest")
     @material_config.setName(CaseInsensitiveString.new("Git Material Name"))

@@ -22,6 +22,9 @@ describe "_form.html.erb" do
   include ReflectiveUtil
 
   before(:each) do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
+
     @material_config = com.thoughtworks.go.helper.MaterialConfigsMother.tfs(GoCipher.new, UrlArgument.new("http://10.4.4.101:8080/tfs/Sample"), "loser", "domain", "passwd", "walk_this_path")
     @material_config.setAutoUpdate(true)
     @material_config.setName(CaseInsensitiveString.new("Tfs Material Name"))

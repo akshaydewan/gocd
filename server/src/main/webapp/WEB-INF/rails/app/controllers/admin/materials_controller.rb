@@ -15,11 +15,12 @@
 #
 
 module Admin
-  class MaterialsController < AdminController
+  class MaterialsController < FastAdminController
     layout "pipelines/details", :only => [:index, :destroy]
 
     include PauseInfoLoader
     include PipelineConfigLoader
+    CLONER = GoConfigCloner.new
 
     load_pipeline_except_for :create, :update, :destroy, :create_package_and_associate
 
@@ -34,6 +35,29 @@ module Admin
     end
 
     def create
+      if params[:stage_parent] == 'templates' or Toggles.isToggleOff(Toggles.FAST_PIPELINE_SAVE)
+        old_create
+        return
+      end
+      pipeline_name = params[:pipeline_name]
+      original_pipeline_config = pipeline_config_service.getPipelineConfig(pipeline_name)
+      @pipeline = CLONER.deep_clone(original_pipeline_config)
+      load_new_material(@cruise_config)
+      @material.setConfigAttributes(params[:material])
+      @pipeline.addMaterialConfig(@material)
+      url_options = {:controller => '/admin/materials', :stage_parent => "pipelines", :current_tab => params[:current_tab]}
+      fast_save_popup({:action => :new, :layout => false}, url_options) do
+        assert_load(:pipeline, @pipeline)
+        assert_load(:pipeline_md5, params[:pipeline_md5])
+        assert_load(:pipeline_group_name, params[:pipeline_group_name])
+        assert_load(:pipeline_name, params[:pipeline_name])
+        assert_load :material, @pipeline.materialConfigs().last()
+        load_pause_info
+        load_other_form_objects(@cruise_config)
+      end
+    end
+
+    def old_create
       load_new_material(@cruise_config)
       save_popup(params[:config_md5], get_create_command, {:action => :new, :layout => false}, {:controller => '/admin/materials', :stage_parent => "pipelines", :current_tab => params[:current_tab]}) do
         assert_load :pipeline, get_node_for_create

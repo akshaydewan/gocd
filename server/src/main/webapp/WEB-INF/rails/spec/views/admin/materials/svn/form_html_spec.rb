@@ -22,6 +22,9 @@ describe "_form.html.erb" do
   include ReflectiveUtil
 
   before(:each) do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
+
     @material_config = com.thoughtworks.go.helper.MaterialConfigsMother.svn("svn://foo", "loser", "secret", true, "dest")
     @material_config.setAutoUpdate(true)
     @material_config.setName(CaseInsensitiveString.new("Svn Material Name"))

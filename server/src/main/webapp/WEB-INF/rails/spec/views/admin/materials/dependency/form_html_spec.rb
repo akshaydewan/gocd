@@ -21,6 +21,9 @@ describe "_form.html.erb" do
   include FormUI
 
   before(:each) do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
+
     @material_config = DependencyMaterialConfig.new(CaseInsensitiveString.new("up-pipeline"), CaseInsensitiveString.new("up-stage"))
     @material_config.setName(CaseInsensitiveString.new("Dependency Material Name"))
 

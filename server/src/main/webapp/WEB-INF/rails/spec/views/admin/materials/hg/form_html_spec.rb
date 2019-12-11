@@ -21,6 +21,9 @@ describe "_form.html.erb" do
   include FormUI
 
   before(:each) do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
+
     @material_config = com.thoughtworks.go.helper.MaterialConfigsMother.hg("hg://foo", "dest")
     @material_config.setName(CaseInsensitiveString.new("Hg Material Name"))
     @material_config.setAutoUpdate(true)

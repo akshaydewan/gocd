@@ -21,6 +21,8 @@ describe "admin/materials/hg/new.html.erb" do
   include GoUtil
 
   before :each do
+    @pipeline = PipelineConfigMother.createPipelineConfig("pipeline-name", "foo", ["build-1"].to_java(java.lang.String))
+    assign(:pipeline, @pipeline)
     assign(:material, @material = com.thoughtworks.go.helper.MaterialConfigsMother.hg("url", nil))
     assign(:cruise_config, @cruise_config = BasicCruiseConfig.new)
     ReflectionUtil.setField(@cruise_config, "md5", "abc")

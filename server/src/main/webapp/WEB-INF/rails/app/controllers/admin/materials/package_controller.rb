@@ -16,6 +16,11 @@
 
 module Admin::Materials
   class PackageController < ::Admin::MaterialsController
+
+    def create
+      old_create
+    end
+
     private
 
     def load_other_form_objects(cruise_config)

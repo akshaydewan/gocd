@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-shared_examples_for :material_controller do
+shared_examples_for :material_controller_without_fast_save do
 
   include ConfigSaveStubbing
   include MockRegistryModule
@@ -78,28 +78,30 @@ shared_examples_for :material_controller do
       end
 
       it "should add new material" do
-        result = HttpLocalizedOperationResult.new
-        expect(@pipeline_config_service).to receive(:updatePipelineConfig).and_return(result)
+        stub_save_for_success
 
         expect(@pipeline.materialConfigs().size).to eq(1)
 
-        post :create, params: {:pipeline_name => "pipeline-name", :config_md5 => "1234abcd", :material => update_payload,
-                               :pipeline_md5 => "pipeline-md5", :pipeline_group_name => 'defaultGroup'}
+        post :create, params: {:pipeline_name => "pipeline-name", :config_md5 => "1234abcd", :material => update_payload}
 
-        expect(assigns[:pipeline].materialConfigs().size).to eq(2)
-        expect(response.status).to eq(200)
+        expect(@pipeline.materialConfigs().size).to eq(2)
+        expect(@cruise_config.getAllErrors().size).to eq(0)
+        assert_successful_create
         expect(response.body).to eq('Saved successfully')
         expect(URI.parse(response.location).path).to eq(admin_material_index_path)
       end
 
       it "should assign config_errors for display when create fails due to validation errors" do
-        result = HttpLocalizedOperationResult.new
-        result.badRequest('some message')
-        expect(@pipeline_config_service).to receive(:updatePipelineConfig).and_return(result)
+        stub_save_for_validation_error do |result, cruise_config, node|
+          cruise_config.errors().add("base", "someError")
+          result.badRequest('some message')
+        end
 
-        post :create, params: {:pipeline_name => "pipeline-name", :config_md5 => "1234abcd", :material => update_payload,
-                               :pipeline_md5 => "pipeline-md5", :pipeline_group_name => 'defaultGroup'}
+        post :create, params: {:pipeline_name => "pipeline-name", :config_md5 => "1234abcd", :material => update_payload}
 
+        expect(@cruise_config.getAllErrors().size).to eq(1)
+
+        expect(assigns[:errors].size).to eq(1)
         expect(response.status).to eq(400)
         assert_template layout: false
       end
@@ -212,9 +214,6 @@ shared_examples_for :material_controller do
     allow(@go_config_service).to receive(:getConfigForEditing).and_return(@cruise_config)
     allow(@go_config_service).to receive(:doesPipelineExist).and_return(true)
     allow(@go_config_service).to receive(:isPipelineDefinedInConfigRepository).and_return(false)
-    allow(@go_config_service).to receive(:getCurrentConfig).and_return(@cruise_config)
-    @pipeline_config_service = stub_service(:pipeline_config_service)
-    allow(@pipeline_config_service).to receive(:getPipelineConfig).and_return(@pipeline)
   end
 
   def controller_specific_assertion
